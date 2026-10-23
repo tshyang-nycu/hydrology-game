@@ -1228,9 +1228,9 @@ async function introScene(){
 }
 /* ===== 獨立版：流程、存檔、成績（不需要 Claude） ===== */
 /* ---------- 設定（老師可修改） ---------- */
-const SHEET_URL='';           // Google Apps Script 部署後的網址；留空＝不回傳成績（純測試）
-const TEACHER_KEY='teacher';  // 網址加上 ?teacher=這個字串，就會顯示答案提示與目標文字
-const ALLOW_RESET=true;       // 測試期間允許在結算畫面清除紀錄重玩；正式考試請改成 false
+const SHEET_URL='https://script.google.com/macros/s/AKfycbxq-5x0XtJyBjj5FTGZr269WIXgXUJ4GW5ZctXPezwyqXjAE63gX_0GXvc4IpaGeDkDjQ/exec';           // Google Apps Script 部署後的網址；留空＝不回傳成績（純測試）
+const TEACHER_KEY='Brooke';  // 網址加上 ?teacher=這個字串，就會顯示答案提示與目標文字
+const ALLOW_RESET=false;       // 測試期間允許在結算畫面清除紀錄重玩；正式考試請改成 false
 /* ------------------------------------- */
 let db=null,downloads=null,uid=null,meRef=null,practice=false;
 let isOwner=new URLSearchParams(location.search).get('teacher')===TEACHER_KEY;
