@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>青禾村的雨｜水文學 RPG</title>
+<title>雨來村的雨｜水文學 RPG</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -143,6 +143,14 @@ tbody th{text-align:left;background:var(--surface2);font-weight:500}
 .fb{border-radius:12px;padding:12px 16px;font-weight:500;line-height:1.7}
 .fb.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
 .fb.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.slots{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.slot{flex:1;min-width:110px;border:2px dashed var(--line);border-radius:10px;padding:6px 10px;font-weight:700;text-align:center}
+.slot small{display:block;font-weight:400;color:var(--muted);font-size:.75rem}
+.slot.on{border-style:solid;border-color:var(--water);background:var(--water-soft)}
+.opts.cards{grid-template-columns:1fr 1fr}
+.opt.card{text-align:center;font-weight:700;position:relative}
+.opt.card[data-n]:not([data-n=""])::before{content:attr(data-n);position:absolute;left:8px;top:6px;width:20px;height:20px;border-radius:50%;background:var(--water);color:#fff;font-size:.75rem;line-height:20px}
+.uprev{display:flex;gap:8px;flex-wrap:wrap}.uprev img{width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 .skills{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:480px){.skills{grid-template-columns:1fr}}
 .skillcard{display:flex;flex-direction:column;gap:4px;text-align:left;padding:14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
@@ -161,7 +169,7 @@ tbody th{text-align:left;background:var(--surface2);font-weight:500}
 </head>
 <body>
 <header class="hud" id="hud">
-  <span class="title">青禾村的雨</span>
+  <span class="title">雨來村的雨</span>
   <span class="lv" id="lv">Lv 1</span>
   <span class="bar">EXP<span class="track"><span class="fill" id="xpf" style="width:0"></span></span></span>
   <span class="spacer"></span>
@@ -172,7 +180,7 @@ tbody th{text-align:left;background:var(--surface2);font-weight:500}
 </header>
 <main id="app"><p class="muted">載入中…</p></main>
 <script>
-const VERSION='hydro-rpg-v2';   // 改動此字串會讓所有題目數據重新產生
+const VERSION='hydro-rpg-v3';   // 改動此字串會讓所有題目數據重新產生
 /* ===== 亂數（以學生 id 為種子，每人數據不同但固定） ===== */
 function rngFrom(str){
   let h=1779033703^str.length;
@@ -182,6 +190,11 @@ function rngFrom(str){
 }
 /* ===== 計分題 ===== */
 const QORDER=['q0','q1','q2','q3','q4','q5','q6','q7','q8'];
+const PHI_NPCS=['yun','scholar','woodman','merchant'],UH_NPCS=['oldkeeper','student','hutowner','hiker'];
+const PHI_STEPS=['列出每個時段的降雨強度','每個時段的降雨強度減去 φ，小於 φ 的時段記為 0','各時段的結果乘上時段長度後加總'];
+const PHI_WRONG='把總雨量除以下雨的時數，就是有效降雨';
+const UH_STEPS=['把直接逕流歷線各時刻的流量加總','加總結果乘上時間間隔、再除以集水面積，換算成直接逕流深度','把直接逕流歷線每個時刻對應的流量除以逕流深度（cm）'];
+const UH_WRONG='把直接逕流歷線對應的流量直接除以降雨延時';
 function genQuestions(seed){
   const r=rngFrom(VERSION+':'+seed);
   const ri=(a,b)=>a+Math.floor(r()*(b-a+1));
@@ -190,25 +203,20 @@ function genQuestions(seed){
   const Q={};
   { const o=shuffle(['二氧化碳 (CO₂)','氧氣 (O₂)','氮氣 (N₂)','氬氣 (Ar)']);
     Q.q0={id:'q0',type:'mc',title:'霖的考驗',prompt:'下列哪一種是溫室氣體？',options:o,correct:o.indexOf('二氧化碳 (CO₂)')}; }
-  { const phi=ri(6,12); const highs=[ri(phi+4,40),ri(phi+8,48),ri(phi+3,30)]; const low=ri(2,phi-2);
-    const P=r()<0.5?[low,...highs]:[...highs,low];
-    Q.q1={id:'q1',type:'num',title:'暴雨中的雨量站',prompt:`雨量站記錄到這場暴雨四個小時的降雨強度如下。已知此集水區的 φ 指數為 ${phi} mm/hr，請計算這四小時的總有效降雨深度。`,
-      tables:[{head:['時間 (hr)','0–1','1–2','2–3','3–4'],rows:[['降雨強度 (mm/hr)',...P]]}],unit:'mm',answer:P.reduce((s,p)=>s+Math.max(0,p-phi),0),tol:0.01}; }
-  { const CN=ri(60,88),P=ri(80,180); const S=25400/CN-254,Ia=0.2*S;
-    Q.q2={id:'q2',type:'num',title:'龜裂的農地',prompt:`阿梅的農地所在的子集水區，SCS 曲線號碼 CN = ${CN}，這場暴雨的累積降雨量 P = ${P} mm。採用 Iₐ = 0.2S，請估算直接逕流深度。`,
-      unit:'mm',answer:(P-Ia)**2/(P+0.8*S),tol:0.02}; }
-  { const pk=ri(60,150); const f=[0,0.3+0.1*r(),0.7+0.1*r(),1,0.55+0.1*r(),0.25+0.1*r(),0.08+0.05*r(),0];
-    const Qd=f.map(v=>Math.round(pk*v)); const sum=Qd.reduce((a,b)=>a+b,0);
-    const Pcm=step(1.5,4,0.5); const A=Math.round(sum*0.36/Pcm*10)/10; const depthCm=sum*0.36/A;
-    Q.q3={id:'q3',type:'num',title:'墨川的觀測筆記',prompt:`筆記記載：一場延時 1 小時的有效降雨所產生的直接逕流歷線如下（已扣除基流），集水面積 A = ${A} km²。請推求 1 小時、1 cm 單位歷線在第 3 小時的縱距。`,
-      tables:[{head:['時間 (hr)',...Qd.map((_,k)=>k)],rows:[['直接逕流 (m³/s)',...Qd]]}],unit:'m³/s',answer:Qd[3]/depthCm,tol:0.02}; }
+  { const ids=shuffle(PHI_NPCS);const lines={};PHI_STEPS.forEach((t,k)=>lines[ids[k]]=t);lines[ids[3]]=PHI_WRONG;
+    Q.q1={id:'q1',type:'order',title:'雨量站：φ 指數法的步驟',prompt:'要用 φ 指數法算出這場暴雨的總有效降雨深度，正確的步驟順序是什麼？請依序點選告訴你各個步驟的人。（注意：其中有一個人說的方法是錯的）',cards:shuffle(PHI_NPCS),correct:ids.slice(0,3),lines}; }
+  { const CN=ri(60,88),P=ri(80,180),area=ri(15,60)/10,slope=ri(3,15); const S=25400/CN-254,Ia=0.2*S;
+    Q.q2={id:'q2',type:'num',title:'龜裂的農地',prompt:'請用 SCS 曲線號碼法估算阿梅農地的直接逕流深度（採用 Iₐ = 0.2S）。計算所需的資料，要向附近的人打聽。',
+      unit:'mm',answer:(P-Ia)**2/(P+0.8*S),tol:0.02,params:{CN,P,area,slope}}; }
+  { const ids=shuffle(UH_NPCS);const lines={};UH_STEPS.forEach((t,k)=>lines[ids[k]]=t);lines[ids[3]]=UH_WRONG;
+    Q.q3={id:'q3',type:'order',title:'墨川的觀測筆記：推求單位歷線的步驟',prompt:'筆記裡記著一場延時 1 小時的有效降雨所產生的直接逕流歷線（已扣除基流）。要從它推求 1 cm 單位歷線，正確的步驟順序是什麼？請依序點選告訴你各個步驟的人。（注意：其中有一個人說的方法是錯的）',cards:shuffle(UH_NPCS),correct:ids.slice(0,3),lines}; }
   { const pk=ri(40,100); const f=[0,0.35+0.1*r(),0.8+0.1*r(),1,0.5+0.1*r(),0.2+0.1*r(),0];
     const U=f.map(v=>Math.round(pk*v)); const k=ri(2,4);
-    Q.q4={id:'q4',type:'num',title:'煤煙魔的結界',prompt:`結界由兩股接連的 1 小時雨雲交疊而成。已知此集水區的 1 小時、1 cm 單位歷線如下，請推求 2 小時、1 cm 單位歷線在第 ${k} 小時的縱距，找出結界的破綻。`,
+    Q.q4={id:'q4',type:'num',title:'煤煙魔的結界',prompt:`結界由兩股接連的 1 小時雨雲交疊而成。已知此集水區的 1 小時、1 cm 單位歷線如下，請推求 2 小時、1 cm 單位歷線在第 ${k} 小時對應的流量，找出結界的破綻。`,
       tables:[{head:['時間 (hr)',...U.map((_,t)=>t)],rows:[['1 小時 UH (m³/s)',...U]]}],unit:'m³/s',answer:(U[k]+U[k-1])/2,tol:0.02}; }
-  { const C=step(0.4,0.85,0.05),i=ri(8,24)*5,A=ri(5,40)/10;
-    Q.q5={id:'q5',type:'num',title:'古城排水道',prompt:`古城舊排水道的集水面積 A = ${A} km²，逕流係數 C = ${C}，對應集流時間的設計降雨強度 i = ${i} mm/hr。請以合理化公式計算設計尖峰流量。`,
-      unit:'m³/s',answer:C*i*A/3.6,tol:0.02}; }
+  { const C=step(0.4,0.85,0.05),i=ri(8,24)*5,A=ri(5,40)/10,tot=ri(120,240),dur=ri(2,5);
+    Q.q5={id:'q5',type:'num',title:'古城排水道',prompt:'請以合理化公式計算古城排水道的設計尖峰流量。計算所需的資料，要向遺跡裡的人打聽。',
+      unit:'m³/s',answer:C*i*A/3.6,tol:0.02,params:{C,i,A,tot,dur}}; }
   { const yes=shuffle(['有效降雨在其延時內強度均勻','有效降雨在整個集水區內空間分布均勻','直接逕流歷線的縱距與有效降雨深度成正比','同延時的有效降雨不論何時發生，產生的歷線形狀相同','同延時有效降雨所產生之直接逕流歷線，基期都相同']).slice(0,3);
     const no=shuffle(['歷線基期會隨有效降雨強度增加而變長','單位歷線中包含基流量','有效降雨深度等於總降雨深度','單位歷線只適用於面積超過一萬平方公里的集水區']).slice(0,3);
     const o=shuffle([...yes,...no]);
@@ -229,6 +237,7 @@ function genQuestions(seed){
 function grade(q,v){
   if(v===undefined||v===null||v==='') return false;
   if(q.type==='mc') return Number(v)===q.correct;
+  if(q.type==='order') return Array.isArray(v)&&v.length===q.correct.length&&v.every((x,i)=>x===q.correct[i]);
   if(q.type==='multi'){ if(!Array.isArray(v))return false; const a=v.map(Number).sort((x,y)=>x-y); return a.length===q.correct.length&&a.every((x,i)=>x===q.correct[i]); }
   const x=Number(v); if(!isFinite(x)) return false;
   return Math.abs(x-q.answer)<=Math.max(q.tol*Math.abs(q.answer),0.05);
@@ -399,9 +408,23 @@ const LOOKS={
  chief:{hair:'#e8e8e8',skin:'#e0b48e',top:'#6a4a8a',top2:'#55397a',bot:'#3a2a4a',beard:true},
  mei:{hair:'#3a2a1a',skin:'#e0b48e',top:'#c08a4a',top2:'#a06e36',bot:'#5a4a3a',scarf:'#7aa04a'},
  spirit:{hair:'#7fe0a8',skin:'#c8f5dc',top:'#3fae78',top2:'#2a8a5c',bot:'#2a8a5c',long:true,glow:true,eye:'#1d5a3c'},
+ yun:{hair:'#5a3a2a',skin:'#f1c9a0',top:'#4f8fbf',top2:'#3a6f99',bot:'#33404a',cap:'#2f6f9f'},
+ scholar:{hair:'#7a7a7a',skin:'#e6be98',top:'#7a5a3a',top2:'#5e4430',bot:'#3a3a3a',hat:'#6b5a3a',hatb:'#4a3d28'},
+ woodman:{hair:'#4a3020',skin:'#d9a982',top:'#5a7a3a',top2:'#45602c',bot:'#4a3a2a',beard:true},
+ merchant:{hair:'#2a2a2a',skin:'#efc6a0',top:'#a03a3a',top2:'#802c2c',bot:'#3a2a2a',hat:'#c9a14a',hatb:'#9a7a30'},
+ oldkeeper:{hair:'#dcdcdc',skin:'#e0b48e',top:'#4a5a6a',top2:'#3a4855',bot:'#2a3038'},
+ student:{hair:'#1e1e28',skin:'#f4d2b0',top:'#e0e0e0',top2:'#bcbcbc',bot:'#2e4a6a',messy:true},
+ hutowner:{hair:'#3a2a1a',skin:'#d9a982',top:'#8a4a2a',top2:'#6e3a20',bot:'#3a2a1a',bun:true,apron:'#e8dcc4'},
+ hiker:{hair:'#5a3a1a',skin:'#f1c9a0',top:'#e07a2a',top2:'#c0601a',bot:'#3a4a3a',cap:'#2a6a4a'},
+ volunteer:{hair:'#2a1a1a',skin:'#f4d2b0',top:'#7ac07a',top2:'#5aa05a',bot:'#3a3a5a',long:true},
+ surveyor:{hair:'#3a3a3a',skin:'#e6be98',top:'#f0a020',top2:'#c88018',bot:'#3a3a3a',hat:'#f4f1e6',hatb:'#c9c2ae'},
+ archaeologist:{hair:'#6a4a2a',skin:'#efc6a0',top:'#b8a070',top2:'#9a8458',bot:'#5a4a3a',straw:true},
+ guard:{hair:'#2a2a2a',skin:'#d9a982',top:'#5a6a4a',top2:'#45523a',bot:'#3a3a2a',cap:'#4a5a3a'},
+ veteran:{hair:'#bdbdbd',skin:'#d9a982',top:'#6a5a4a',top2:'#52463a',bot:'#3a3028',beard:true},
+ traveler:{hair:'#4a2a1a',skin:'#f1c9a0',top:'#6a4a8a',top2:'#55397a',bot:'#3a3a3a',scarf:'#c0a040'},
  corrupt:{hair:'#2a2418',skin:'#4a3e30',top:'#3a3024',top2:'#2a2218',bot:'#2a2218',messy:true,eye:'#9fff6a'},
 };
-const NAMES={narr:'',lin:'霖',mo:'墨川',moc:'煤煙魔・墨川',farmer:'阿土伯',kid:'小豆',aunt:'秀姨',chief:'村長',mei:'阿梅',spirit:'森靈',corrupt:'污濁之主'};
+const NAMES={narr:'',lin:'霖',mo:'墨川',moc:'煤煙魔・墨川',farmer:'阿土伯',kid:'小豆',aunt:'秀姨',chief:'村長',mei:'阿梅',spirit:'森靈',corrupt:'污濁之主',yun:'觀測員阿雲',scholar:'水文學者',woodman:'樵夫阿木',merchant:'商人老陳',oldkeeper:'老站員',student:'研究生小宇',hutowner:'山屋老闆娘',hiker:'登山客',volunteer:'志工小晴',surveyor:'測量員',archaeologist:'考古學家',guard:'巡守員',veteran:'守城老兵',traveler:'旅人'};
 function drawChar(c,ox,oy,L,dir,frame,P=2){
  const p=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(ox+x*P,oy+y*P,w*P,h*P);};
  const by=L.small?1:0, step=frame%2===1;
@@ -488,7 +511,7 @@ function drawFoe(c,spr,x,y,s,t,flash){
  c.restore();
 }
 const MAPS={
- village:{name:'青禾村',theme:'village',enc:0,song:'village',grid:[
+ village:{name:'雨來村',theme:'village',enc:0,song:'village',grid:[
 "TTTTTTTTTT,,TTTTTTTTTT",
 "T.........,,....O....T",
 "T.HH......,,.....HH..T",
@@ -753,23 +776,27 @@ function tableHTML(t){return `<div class="tbl"><table>${t.caption?`<caption>${t.
 /* 計分題：答對才能前進，可無限重答 */
 function ask(qid,opt={}){
  return new Promise(res=>{
-  const q=qs[qid]; let picked=q.type==='multi'?new Set():null;
-  const input=q.type==='num'?`<label for="ans">你的答案</label><div class="ansrow"><input type="text" id="ans" inputmode="decimal" autocomplete="off"><span class="unit">${q.unit}</span></div>`
+  const q=qs[qid]; let picked=q.type==='multi'?new Set():q.type==='order'?[]:null;
+  const input=q.type==='order'?`<div class="slots" id="oslots"></div><div class="opts cards">${q.cards.map(id=>`<button class="opt card" data-id="${id}" aria-pressed="false">${NAMES[id]}</button>`).join('')}</div><button class="btn ghost small" id="oreset" type="button">重選</button>`
+   :q.type==='num'?`<label for="ans">你的答案</label><div class="ansrow"><input type="text" id="ans" inputmode="decimal" autocomplete="off"><span class="unit">${q.unit}</span></div>`
    :`<div class="opts">${q.options.map((o,k)=>`<button class="opt${opt.stone?' stone':''}" data-k="${k}" aria-pressed="false">${q.type==='multi'?'☐ ':String.fromCharCode(65+k)+'. '}${o}</button>`).join('')}</div>`;
   const m=openModal(`<div class="qhead"><span class="tag">${opt.tag||'關卡挑戰'}</span><h2>${opt.title||q.title}</h2></div>
    <div class="task"><p style="margin:0">${q.prompt}</p></div>${(q.tables||[]).map(tableHTML).join('')}
    ${isOwner?ownerHint(q):''}<div>${input}</div><div id="qfb" aria-live="polite"></div>
    <div class="row"><button class="btn" id="qsub">${opt.submit||'確定'}</button>${opt.closable!==false?'<button class="btn ghost" id="qclose">先離開</button>':''}</div>`);
   const fb=m.querySelector('#qfb');
-  const fill=m.querySelector('#tfill');if(fill)fill.onclick=()=>{if(q.type==='num'){m.querySelector('#ans').value=+q.answer.toFixed(3);}else if(q.type==='mc'){m.querySelectorAll('.opt')[q.correct].click();}else{m.querySelectorAll('.opt').forEach((b,k)=>{if(q.correct.includes(k)!==picked.has(k))b.click();});}};
-  if(q.type!=='num')m.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{SND.sfx('sel');const k=+b.dataset.k;
+  const drawSlots=()=>{const el=m.querySelector('#oslots');if(!el)return;el.innerHTML=q.correct.map((_,i)=>`<span class="slot${picked[i]?' on':''}"><small>第 ${i+1} 步</small>${picked[i]?NAMES[picked[i]]:'—'}</span>`).join('');m.querySelectorAll('.card').forEach(b=>{const k=picked.indexOf(b.dataset.id);b.setAttribute('aria-pressed',k>=0);b.dataset.n=k>=0?k+1:'';});};
+  if(q.type==='order'){drawSlots();m.querySelectorAll('.card').forEach(b=>b.onclick=()=>{SND.sfx('sel');const id=b.dataset.id;const k=picked.indexOf(id);if(k>=0)picked.splice(k,1);else if(picked.length<q.correct.length)picked.push(id);drawSlots();});m.querySelector('#oreset').onclick=()=>{picked.length=0;drawSlots();};}
+  const fill=m.querySelector('#tfill');if(fill)fill.onclick=()=>{if(q.type==='order'){picked.length=0;q.correct.forEach(id=>picked.push(id));drawSlots();}else if(q.type==='num'){m.querySelector('#ans').value=+q.answer.toFixed(3);}else if(q.type==='mc'){m.querySelectorAll('.opt')[q.correct].click();}else{m.querySelectorAll('.opt').forEach((b,k)=>{if(q.correct.includes(k)!==picked.has(k))b.click();});}};
+  if(q.type!=='num'&&q.type!=='order')m.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{SND.sfx('sel');const k=+b.dataset.k;
    if(q.type==='multi'){picked.has(k)?picked.delete(k):picked.add(k);b.setAttribute('aria-pressed',picked.has(k));b.firstChild.textContent=b.textContent.replace(/^[☐☑] /,picked.has(k)?'☑ ':'☐ ');}
    else{picked=k;m.querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',x===b));}});
-  else{const a=m.querySelector('#ans');setTimeout(()=>a.focus(),50);a.onkeydown=e=>{if(e.key==='Enter')m.querySelector('#qsub').click();};}
+  else if(q.type==='num'){const a=m.querySelector('#ans');setTimeout(()=>a.focus(),50);a.onkeydown=e=>{if(e.key==='Enter')m.querySelector('#qsub').click();};}
   const cl=m.querySelector('#qclose');if(cl)cl.onclick=()=>{closeModal();res(false);};
   m.querySelector('#qsub').onclick=async()=>{
    let v;
    if(q.type==='num'){const raw=m.querySelector('#ans').value.trim().replace(/,/g,'');v=Number(raw);if(raw===''||!isFinite(v)){fb.innerHTML='<p class="err">請輸入一個數字（不用加單位）。</p>';return;}}
+   else if(q.type==='order'){if(picked.length<q.correct.length){fb.innerHTML=`<p class="err">請依序選出 ${q.correct.length} 個人。</p>`;return;}v=picked.slice();}
    else if(q.type==='multi'){if(!picked.size){fb.innerHTML='<p class="err">請至少選一個。</p>';return;}v=[...picked].sort((a,b)=>a-b);}
    else{if(picked===null){fb.innerHTML='<p class="err">請先選擇一個選項。</p>';return;}v=picked;}
    state.attempts=state.attempts||{};state.attempts[qid]=(state.attempts[qid]||0)+1;
@@ -778,6 +805,7 @@ function ask(qid,opt={}){
     save({attempts:{[qid]:state.attempts[qid]},solved:{[qid]:v},solvedAt:{[qid]:state.solvedAt[qid]}});const rw=ONI_REWARD[qid]||0;if(rw){G.items.onigiri=(G.items.onigiri||0)+rw;}updateHud();saveGame();
     SND.sfx('ok');fb.innerHTML=`<div class="fb ok">${opt.okText||'答對了！'}${rw?`<br>🍙 獲得飯糰 ×${rw}`:''}</div>`;m.querySelectorAll('button,input').forEach(x=>x.disabled=true);
     await sleep(900);closeModal();res(true);}
+   else if(opt.onWrong){save({attempts:{[qid]:state.attempts[qid]}});SND.sfx('no');const msg=opt.onWrong(v);fb.innerHTML=`<div class="fb bad">${msg}（已嘗試 ${state.attempts[qid]} 次）</div>`;m.querySelectorAll('button,input').forEach(x=>x.disabled=true);await sleep(2200);closeModal();res(false);}
    else{save({attempts:{[qid]:state.attempts[qid]}});SND.sfx('no');fb.innerHTML=`<div class="fb bad">${opt.noText||'答案不正確，再想想看。'}（已嘗試 ${state.attempts[qid]} 次）</div>`;
     const pn=m.querySelector('.panel');pn.classList.remove('wiggle');void pn.offsetWidth;pn.classList.add('wiggle');}
   };
@@ -785,7 +813,7 @@ function ask(qid,opt={}){
 }
 function ownerHint(q){
  const L=k=>String.fromCharCode(65+k);
- const a=q.type==='num'?`${+q.answer.toFixed(3)} ${q.unit}（容許 ±2%）`:q.type==='mc'?`${L(q.correct)}. ${q.options[q.correct]}`:q.correct.map(k=>q.options[k]).join('、');
+ const a=q.type==='order'?q.correct.map(id=>NAMES[id]).join(' → '):q.type==='num'?`${+q.answer.toFixed(3)} ${q.unit}（容許 ±2%）`:q.type==='mc'?`${L(q.correct)}. ${q.options[q.correct]}`:q.correct.map(k=>q.options[k]).join('、');
  return `<div class="fb ok" style="font-size:.9rem">教師提示（只有您看得到）：${a} <button class="btn small" id="tfill" type="button">填入答案</button></div>`;
 }
 /* 戰鬥小問答（不計分，一次機會） */
@@ -886,6 +914,7 @@ async function battleOnce(o){
  G.scene='battle';SND.play(BT.boss?'boss':'battle');showControls(false);bpanel();
  await fadeIn();
  if(o.intro)await talk(o.intro);
+ if(BT.boss&&solved(FOES[BT.boss].q)&&typeof uploadWork==='function'&&!(state.uploads&&state.uploads[FOES[BT.boss].q]))await uploadWork(FOES[BT.boss].q);
  if(o.retry)await blog('再次挑戰！',900);
  let lost=false;
  while(true){
@@ -945,7 +974,7 @@ function chooseCmd(p){
     else if(c==='sk')skills();
     else if(c==='item')items();
     else if(c==='ana'){if(!BT.barrier)return main();el.innerHTML='';const f=BT.foes[0];const ok=await ask(FOES[BT.boss].q,{tag:'解讀結界',title:qs[FOES[BT.boss].q].title,closable:true,submit:'解讀',okText:`破解成功！你獲得了「${f.tool}」！`,noText:'結界沒有反應……'});
-     if(ok){await breakBarrier();} main();}
+     if(ok){if(typeof uploadWork==='function')await uploadWork(FOES[BT.boss].q);await breakBarrier();} main();}
    });el.dataset.lock='0';el.querySelector('button').focus({preventScroll:true});showCmds();};
   const skills=()=>{el.dataset.lock='0';const sk=G.sk[p.id];
    el.innerHTML=sk.map(k=>`<button data-k="${k}" ${p.cur.mp<SK[k].mp?'disabled':''}>${SK[k].n}<small>${SK[k].mp?'MP '+SK[k].mp:'HP'}</small></button>`).join('')+'<button data-k="back" class="ghost">返回</button>';
@@ -1088,7 +1117,12 @@ function entsFor(map){
   {id:'kid',x:13,y:11,look:'kid',name:'小豆',dir:'down',mark:()=>!f.lin&&!(f.talked&&f.talked.kid)},
   {id:'aunt',x:16,y:4,look:'aunt',name:'秀姨',dir:'down',mark:()=>!f.lin&&!(f.talked&&f.talked.aunt)},
   {id:'lin',x:15,y:1,look:'lin',name:'霖',dir:'down',show:()=>!f.lin,mark:()=>talkedN()>=4}];
- if(map==='north')return[{id:'mei',x:18,y:7,look:'mei',name:'阿梅',dir:'left',mark:()=>!solved('q2')}];
+ const npc=(id,x,y,dir='down')=>({id,x,y,look:id,name:NAMES[id],dir,mark:()=>!(f.heard&&f.heard[id])});
+ if(map==='north')return[{id:'mei',x:18,y:7,look:'mei',name:'阿梅',dir:'left',mark:()=>!solved('q2')},
+  npc('yun',19,12,'left'),npc('scholar',8,14),npc('woodman',4,10,'right'),npc('merchant',14,13),
+  npc('oldkeeper',3,4,'right'),npc('student',13,2),npc('hutowner',22,4,'left'),npc('hiker',8,6),
+  npc('volunteer',20,11,'left'),npc('surveyor',23,6,'left')];
+ if(map==='south')return[npc('archaeologist',14,2),npc('guard',5,8,'right'),npc('veteran',22,13,'left'),npc('traveler',6,15,'right')];
  if(map==='cave')return[{id:'boss1',x:11,y:3,look:'moc',name:'？？？',show:()=>!f.b1}];
  if(map==='wetland')return[{id:'boss2',x:10,y:7,foe:'boss2',name:'污濁之主',show:()=>!f.b2},{id:'spirit',x:10,y:7,look:'spirit',name:'森靈',show:()=>!!f.b2}];
  return[];
@@ -1115,6 +1149,24 @@ async function goMap(id,x,y,dir){
  ENTS=entsFor(id);SND.play(songFor());SND.sfx('door');saveGame();updateGoal();await fadeIn();
 }
 function setTalked(k){G.f.talked=G.f.talked||{};G.f.talked[k]=true;saveGame();}
+/* ---- 提供步驟與參數的 NPC ---- */
+function heard(id){G.f.heard=G.f.heard||{};G.f.heard[id]=true;let changed=false;if(G.f.need){for(const k in G.f.need)if(G.f.need[k]===id){delete G.f.need[k];changed=true;}}saveGame();return changed;}
+async function needCheck(qid){const nd=G.f.need&&G.f.need[qid];if(!nd)return false;await talk([['lin',`先去找${NAMES[nd]}再聊一次吧。`]]);return true;}
+function wrongOrder(qid,v){const q=qs[qid];let id=q.correct.find((c,i)=>v[i]!==c)||q.correct[0];G.f.need=G.f.need||{};G.f.need[qid]=id;saveGame();return `順序好像不對……再去聽聽${NAMES[id]}怎麼說吧。`;}
+const FLAVOR={yun:'我是雨量站的觀測員阿雲。',scholar:'我是到處調查河川的水文學者。',woodman:'我在山裡砍柴砍了三十年，也學了點水文知識。',merchant:'做生意的也得懂天氣啊！',
+ oldkeeper:'我以前在這座水文站工作。',student:'我是來做論文調查的研究生。',hutowner:'山屋開了二十年，來過不少工程師。',hiker:'我常常跟水利系的朋友一起爬山。'};
+const stepNpc=(qid,label)=>async e=>{const line=qs[qid].lines[e.id];const again=heard(e.id);
+ await talk([[e.id,FLAVOR[e.id]],[e.id,`${label}，其中一個步驟是：「${line}」`],...(again?[['narr','（你把這句話重新聽清楚了，可以回去再試一次。）']]:[])]);};
+const INFO_NPC={
+ yun:stepNpc('q1','要用 φ 指數法算有效降雨'),scholar:stepNpc('q1','要用 φ 指數法算有效降雨'),woodman:stepNpc('q1','要用 φ 指數法算有效降雨'),merchant:stepNpc('q1','要用 φ 指數法算有效降雨'),
+ oldkeeper:stepNpc('q3','要從逕流紀錄推求單位歷線'),student:stepNpc('q3','要從逕流紀錄推求單位歷線'),hutowner:stepNpc('q3','要從逕流紀錄推求單位歷線'),hiker:stepNpc('q3','要從逕流紀錄推求單位歷線'),
+ volunteer:async e=>{heard(e.id);await talk([[e.id,'我在雨量站幫忙記錄。'],[e.id,`這場暴雨到現在，累積雨量是 ${qs.q2.params.P} mm。`]]);},
+ surveyor:async e=>{heard(e.id);await talk([[e.id,'我在測量這一帶的地形。'],[e.id,`這片集水區的面積大約是 ${qs.q2.params.area} km²，平均坡度大約 ${qs.q2.params.slope}%。`]]);},
+ archaeologist:async e=>{heard(e.id);await talk([[e.id,'古城的排水道集水區，以前大多是石板路和屋頂。'],[e.id,`依照古城的地表狀況，我估計逕流係數 C 大約是 ${qs.q5.params.C}。`]]);},
+ guard:async e=>{heard(e.id);await talk([[e.id,'我巡過整條排水道的集水範圍。'],[e.id,`排水道的集水面積是 ${qs.q5.params.A} km²。`]]);},
+ veteran:async e=>{heard(e.id);await talk([[e.id,'古城留下的防洪紀錄，我都還記得。'],[e.id,`紀錄上寫著，對應集流時間的設計降雨強度是 ${qs.q5.params.i} mm/hr。`]]);},
+ traveler:async e=>{heard(e.id);await talk([[e.id,'我經過這裡的時候，遇上一場大雨。'],[e.id,`那場雨總共下了 ${qs.q5.params.tot} mm，持續了 ${qs.q5.params.dur} 小時。`]]);},
+};
 async function onEntity(e){
  const f=G.f;
  const face={up:'down',down:'up',left:'right',right:'left'}[G.dir];if(e.look&&e.id!=='boss1')e.dir=face;
@@ -1134,9 +1186,10 @@ async function onEntity(e){
   }
   return;
  }
+ if(INFO_NPC[e.id]){await INFO_NPC[e.id](e);return;}
  if(G.map==='north'&&e.id==='mei'){
   if(solved('q2')){await talk([['mei','田埂補好了，謝謝你們！']]);return;}
-  await talk([['mei','我的田旱了好幾個月，土都裂開了，現在又突然下這種大雨……'],['lin','工程師，幫阿梅估算看看，這場雨會在田裡造成多少逕流吧。']]);
+  await talk([['mei','我的田旱了好幾個月，土都裂開了，現在又突然下這種大雨……'],['mei',`我這塊田的土壤和覆蓋狀況，查表得到的 CN 是 ${qs.q2.params.CN}。`],['lin','工程師，幫阿梅估算看看，這場雨會在田裡造成多少逕流吧。其他需要的資料，可以問問附近的人。']]);
   if(await ask('q2'))await talk([['mei','原來會有這麼多水！我得趕快把田埂補好。謝謝你們！']]);
   return;
  }
@@ -1148,7 +1201,7 @@ async function onEntity(e){
   await talk([['narr','黑煙從墨川身上散去，他跪倒在地，恢復了人的模樣。'],['mo','霖……我到底做了什麼……'],['lin','哥！'],['mo','我以為人定勝天，結果沒想到……我反而走火入魔，反而加劇了災害。'],['mo','不，聽我說。我會變成這樣，並不是因為你的關係。'],['mo','當年我去了南方的廢墟，想重建那裡的古代渠道，把水引回村子。'],['mo','可是渠道一挖通，地底就冒出了黑煙……之後發生的事，我就記不清楚了。'],['lin','南方的廢墟……聽說那裡以前是一大片天然森林。'],['mo','真正的原因一定在那裡。讓我跟你們一起去吧，這是我欠村子的。'],['narr','墨川加入了隊伍！']]);
   f.mo=true;ensureParty();SND.sfx('lvl');await chooseSkill('mo',PICKS.mo.join);saveGame();
   await goMap('village',11,11,'down');
-  await talk([['narr','三人回到了青禾村。'],['lin','往南走吧，天然森林就在古城遺跡的另一頭。']]);
+  await talk([['narr','三人回到了雨來村。'],['lin','往南走吧，天然森林就在古城遺跡的另一頭。']]);
   return;
  }
  if(G.map==='wetland'&&e.id==='spirit'){await talk([['spirit','謝謝你們。']]);return;}
@@ -1159,7 +1212,7 @@ async function onEntity(e){
   await talk([['narr','污泥散去，一個散發著綠光的身影出現了——森林之靈「森靈」。'],['spirit','謝謝你們，讓我想起自己原本的樣子。'],['mo','我們會把渠道封起來，讓水回到森林。'],['spirit','我是大自然的海綿。大雨來臨時，我吸收並儲存部分雨水，減緩洪水的衝擊；'],['spirit','乾旱時，我讓儲存的水分慢慢流向河川，維持大地的生機。'],['spirit','只要我健康地存在，就能幫助人類減輕洪水與乾旱帶來的威脅。'],['lin','溫室氣體不會一下子消失。但只要大家一起減少排放、守護我們的土地，環境會慢慢好起來的。'],['mo','做工程，原來要跟自然合作，而不是對抗。']]);
   G.f.restored=true;G.weather='rain';
   await goMap('village',10,8,'down');
-  await talk([['narr','幾天後，一場溫和的雨落在青禾村。'],['narr','水車重新轉動，乾裂的田裡冒出了新芽。'],['chief',`${heroName()}、霖、墨川，謝謝你們！`],['narr','—— 冒險完成 ——']]);
+  await talk([['narr','幾天後，一場溫和的雨落在雨來村。'],['narr','水車重新轉動，乾裂的田裡冒出了新芽。'],['chief',`${heroName()}、霖、墨川，謝謝你們！`],['narr','—— 冒險完成 ——']]);
   await finish();
  }
 }
@@ -1168,16 +1221,18 @@ async function onTile(x,y,ch){
  if(G.map==='village'){const L={O:'霖的氣象觀測塔。塔頂的風向計正緩緩轉動。',W:'井底只剩下一層乾泥。',M:'水車已經好久沒有轉動了。'}[ch];if(L)await talk([['narr',L]]);return;}
  if(G.map==='north'){
   if(ch==='G'){if(solved('q1')){await talk([['narr','雨量計的筒子早就滿了。']]);return;}
-   await talk([['lin','這場雨來得又急又猛。先算算看，有多少雨會變成逕流！']]);
-   if(await ask('q1'))await talk([['lin','果然，雨下得太急，就流進海裡，土壤根本來不及吸收。']]);return;}
+   if(await needCheck('q1'))return;
+   await talk([['lin','這場雨來得又急又猛。要用 φ 指數法算出有效降雨，得照正確的步驟來。'],['lin','附近的人好像都知道其中一些步驟。問清楚了，再回來這裡排出順序。']]);
+   if(await ask('q1',{onWrong:v=>wrongOrder('q1',v)}))await talk([['lin','果然，雨下得太急，就流進海裡，土壤根本來不及吸收。']]);return;}
   if(ch==='B'){if(solved('q3')){await talk([['narr','廢棄的水文站。筆記已經收進霖的背包了。']]);return;}
-   await talk([['narr','廢棄的水文站裡，桌上攤著一本泛黃的觀測筆記。'],['lin','這裡記著一場暴雨的逕流紀錄……先用它推出單位歷線吧。']]);
-   if(await ask('q3')){await talk([['narr','霖翻著筆記，手突然停住了。'],['lin','……這是我哥哥的字。'],['hero','妳哥哥？'],['lin','他叫墨川，也是水利工程師。幾年前村子面臨這樣的極端天氣，他想盡辦法讓村子可以面對，但沒有成功，災害還是發生，因此村民開始責怪他……'],['lin','有一天，他留下一句「我會證明給你們看」，就再也沒有回來。'],['lin','我跟著你，其實是想找到他。']]);f.rev=true;saveGame();}
+   if(await needCheck('q3'))return;
+   await talk([['narr','廢棄的水文站裡，桌上攤著一本泛黃的觀測筆記。'],['lin','這裡記著一場暴雨的逕流紀錄……要用它推出單位歷線，得照正確的步驟來。'],['lin','這一帶的人好像都知道一些步驟。問清楚了，再回來這裡排出順序。']]);
+   if(await ask('q3',{onWrong:v=>wrongOrder('q3',v)})){await talk([['narr','霖翻著筆記，手突然停住了。'],['lin','……這是我哥哥的字。'],['hero','妳哥哥？'],['lin','他叫墨川，也是水利工程師。幾年前村子面臨這樣的極端天氣，他想盡辦法讓村子可以面對，但沒有成功，災害還是發生，因此村民開始責怪他……'],['lin','有一天，他留下一句「我會證明給你們看」，就再也沒有回來。'],['lin','我跟著你，其實是想找到他。']]);f.rev=true;saveGame();}
    return;}
  }
  if(G.map==='south'){
   if(ch==='Q'){if(solved('q5')){await talk([['mo','排水道的設計流量已經算清楚了。']]);return;}
-   await talk([['mo','這就是當年我想重建的排水道。'],['mo','要讓它安全運作，得先算出設計尖峰流量。']]);
+   await talk([['mo','這就是當年我想重建的排水道。'],['mo','要讓它安全運作，得先算出設計尖峰流量。需要的資料，問問遺跡裡的人吧。']]);
    if(await ask('q5'))await talk([['mo','……原來我當年根本沒算過，就急著動工了。']]);return;}
   if(ch==='S'){if(solved('q6')){await talk([['narr','石碑上的文字發出淡淡的微光。']]);return;}
    await talk([['lin','石碑上刻著古人留下的單位歷線「法則」，但其中有些是假的。']]);
@@ -1224,13 +1279,13 @@ async function onExit(dir){
  if(G.map==='wetland'){await talk([['lin','問題就在這裡，我們得解決它。']]);return;}
 }
 async function introScene(){
- await talk([['narr','你是新派任的水利工程師，奉命前往山谷裡的小村落——青禾村。'],['narr','還沒走進村子，你就發現不對勁：河床乾裂，水車停擺，田裡的稻子全都枯黃了。'],['hero','這裡……到底多久沒下雨了？先找村民問問看吧。']]);
+ await talk([['narr','你是新派任的水利工程師，奉命前往山谷裡的小村落——雨來村。'],['narr','還沒走進村子，你就發現不對勁：河床乾裂，水車停擺，田裡的稻子全都枯黃了。'],['hero','這裡……到底多久沒下雨了？先找村民問問看吧。']]);
 }
 /* ===== 獨立版：流程、存檔、成績（不需要 Claude） ===== */
 /* ---------- 設定（老師可修改） ---------- */
-const SHEET_URL='https://script.google.com/macros/s/AKfycbxq-5x0XtJyBjj5FTGZr269WIXgXUJ4GW5ZctXPezwyqXjAE63gX_0GXvc4IpaGeDkDjQ/exec';           // Google Apps Script 部署後的網址；留空＝不回傳成績（純測試）
+const SHEET_URL='https://script.google.com/macros/s/AKfycbz7VpcSD6k4Qa8HjgvtimzDv7ji5YiHv2GonEa7ZNvU3IY5l_JpXInvnk7_kX4oAQq0rQ/exec';           // Google Apps Script 部署後的網址
 const TEACHER_KEY='Brooke';  // 網址加上 ?teacher=這個字串，就會顯示答案提示與目標文字
-const ALLOW_RESET=false;       // 測試期間允許在結算畫面清除紀錄重玩；正式考試請改成 false
+const ALLOW_RESET=false;      // 測試期間允許在結算畫面清除紀錄重玩；正式考試請改成 false
 /* ------------------------------------- */
 let db=null,downloads=null,uid=null,meRef=null,practice=false;
 let isOwner=new URLSearchParams(location.search).get('teacher')===TEACHER_KEY;
@@ -1252,8 +1307,37 @@ function saveGame(){
  const sv={map:G.map,x:G.x,y:G.y,dir:G.dir,f:JSON.parse(JSON.stringify(G.f)),xp:G.xp,sk:JSON.parse(JSON.stringify(G.sk)),steps:{...G.steps},enc:{...G.enc},party:JSON.parse(JSON.stringify(G.party)),items:{...G.items}};
  state.save=sv;state.chapter=chapter();persist();report(false);
 }
-const QTITLE={q0:'溫室氣體',q1:'φ 指數',q2:'SCS-CN',q3:'推求單位歷線',q4:'延遲疊加（BOSS）',q5:'合理化公式',q6:'單位歷線假設',q7:'森林與洪水',q8:'褶合（最終 BOSS）'};
+const QTITLE={q0:'溫室氣體',q1:'φ 指數（步驟排序）',q2:'SCS-CN（收集參數）',q3:'推求單位歷線（步驟排序）',q4:'延遲疊加（BOSS）',q5:'合理化公式（收集參數）',q6:'單位歷線假設',q7:'森林與洪水',q8:'褶合（最終 BOSS）'};
 
+/* ---------- BOSS 題：上傳手寫計算過程 ---------- */
+function compressImg(file){return new Promise((ok,bad)=>{const img=new Image(),url=URL.createObjectURL(file);
+ img.onload=()=>{const k=Math.min(1,1600/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',.82).split(',')[1]);};
+ img.onerror=()=>bad(new Error('無法讀取這張圖片'));img.src=url;});}
+async function postUpload(body){
+ try{const r=await fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});const t=await r.text();if(!/^ok/.test(t))throw new Error(t||'伺服器沒有回應');return true;}
+ catch(e){if(e instanceof TypeError&&navigator.onLine)return true;throw e;}
+}
+function uploadWork(qid){
+ return new Promise(res=>{
+  state.uploads=state.uploads||{};
+  if(!SHEET_URL){state.uploads[qid]='skip';persist();toast('測試版：略過上傳計算過程');return res();}
+  const m=openModal(`<div class="qhead"><span class="tag">上傳計算過程</span><h2>拍下你的手寫計算過程</h2></div>
+   <p>請把這一題的完整計算過程寫在紙上，拍照上傳後才能繼續戰鬥。可以上傳 1～3 張照片。</p>
+   <label class="btn ghost" style="cursor:pointer">選擇或拍攝照片<input type="file" id="ufile" accept="image/*" multiple hidden></label>
+   <div class="uprev" id="uprev"></div><div id="ufb" aria-live="polite"></div>
+   <div class="row"><button class="btn" id="usend" disabled>上傳</button></div>`);
+  let files=[];const fb=m.querySelector('#ufb'),send=m.querySelector('#usend');
+  m.querySelector('#ufile').onchange=e=>{files=[...e.target.files].slice(0,3);m.querySelector('#uprev').innerHTML=files.map(f=>`<img src="${URL.createObjectURL(f)}" alt="計算過程照片">`).join('');send.disabled=!files.length;fb.innerHTML='';};
+  send.onclick=async()=>{
+   send.disabled=true;
+   try{for(let i=0;i<files.length;i++){fb.innerHTML=`<p class="muted">上傳中（${i+1}/${files.length}）……</p>`;const data=await compressImg(files[i]);
+     await postUpload({type:'upload',sid:state.sid,name:state.name,qid,idx:i+1,mime:'image/jpeg',data});}
+    state.uploads[qid]=true;persist();report(true);SND.sfx('ok');fb.innerHTML='<div class="fb ok">上傳完成！</div>';await sleep(900);closeModal();res();}
+   catch(err){fb.innerHTML=`<p class="err">上傳失敗：${esc(err.message||err)}。請確認網路後再試一次。</p>`;send.disabled=false;}
+  };
+ });
+}
 function boot(){
  document.getElementById('mute').onclick=()=>{SND.init();SND.setMuted(!SND.muted);document.getElementById('mute').textContent=SND.muted?'🔇':'🔊';document.getElementById('mute').setAttribute('aria-label',SND.muted?'開啟聲音':'關閉聲音');};
  const unlock=()=>{SND.init();removeEventListener('pointerdown',unlock);removeEventListener('keydown',unlock);};addEventListener('pointerdown',unlock);addEventListener('keydown',unlock);
@@ -1262,8 +1346,8 @@ function boot(){
 function renderRegister(){
  hud.classList.remove('on');
  app.innerHTML=`<div class="stack">
-  <div class="hero"><div class="rain"></div><h1>青禾村的雨</h1>
-   <p class="hand" style="font-size:1.2rem">山谷裡的青禾村已經好幾個月沒下雨了。你是新派任的水利工程師，要查出氣候失常的真相，讓雨水重新回到這片土地。</p></div>
+  <div class="hero"><div class="rain"></div><h1>雨來村的雨</h1>
+   <p class="hand" style="font-size:1.2rem">山谷裡的雨來村已經好幾個月沒下雨了。你是新派任的水利工程師，要查出氣候失常的真相，讓雨水重新回到這片土地。</p></div>
   ${isOwner?'<div class="panel"><b>老師模式</b>：會顯示答案提示與目標文字，並可清除紀錄。</div>':''}
   <div class="panel stack"><h2>冒險須知</h2><ul class="rules">
    <li>用方向鍵／WASD 移動，空白鍵或 Enter 對話、調查。手機請用畫面下方的按鈕。</li>
@@ -1314,7 +1398,7 @@ function renderResult(){
  clearInterval(timerId);hud.classList.remove('on');closeModal();window.scrollTo(0,0);G.scene='none';
  const total=state.totalMs||(state.finishedAt-state.startedAt);
  app.innerHTML=`<div class="stack">
-  <div class="hero"><div class="rain"></div><h1>雨，回到了青禾村</h1><p class="hand" style="font-size:1.15rem">恭喜破關！${esc(state.name)}、霖與墨川守護了這片土地。</p></div>
+  <div class="hero"><div class="rain"></div><h1>雨，回到了雨來村</h1><p class="hand" style="font-size:1.15rem">恭喜破關！${esc(state.name)}、霖與墨川守護了這片土地。</p></div>
   <div class="panel stack"><div><div class="muted">破關時間</div><div class="score">${fmtMs(total)}</div></div>
    <div class="tbl"><table><thead><tr><th>關卡</th><th>嘗試次數</th><th>完成時間</th></tr></thead><tbody>
    ${QORDER.map(q=>`<tr><th scope="row">${QTITLE[q]}</th><td>${state.attempts&&state.attempts[q]||'—'}</td><td>${state.solvedAt&&state.solvedAt[q]!=null?fmtMs(state.solvedAt[q]):'—'}</td></tr>`).join('')}
