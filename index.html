@@ -862,24 +862,24 @@ function startClock(){
 const fmtMs=ms=>{const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0');};
 /* ===== 戰鬥系統 ===== */
 const SK={
- h_press:{n:'水壓衝擊',mp:7,t:'one',m:1.9,fx:'water',d:'對單一敵人造成大量傷害'},
- h_shield:{n:'堤防之盾',mp:8,t:'party',buff:'guard',d:'全隊 3 回合內受到的傷害減半'},
- h_sweep:{n:'洩洪橫掃',mp:8,t:'all',m:1.1,fx:'wave',d:'攻擊所有敵人'},
- h_focus:{n:'穩固基礎',mp:6,t:'self',heal:.4,buff:'atk',d:'回復自身 40% HP，並提升攻擊力'},
- h_uh:{n:'單位歷線斬',mp:12,t:'one',m:2.8,fx:'beam',d:'對單一敵人造成極大傷害'},
- h_rally:{n:'全員鼓舞',mp:9,t:'party',buff:'atk',d:'全隊攻擊力提升 3 回合'},
- l_rain:{n:'甘霖',mp:8,t:'party',heal:.3,d:'回復全隊 30% HP'},
- l_thunder:{n:'雷雨召喚',mp:9,t:'all',m:1.3,fx:'thunder',d:'以落雷攻擊所有敵人'},
- l_mist:{n:'雲霧屏障',mp:8,t:'party',buff:'guard',d:'全隊 3 回合內受到的傷害減半'},
- l_deluge:{n:'豪雨',mp:9,t:'one',m:2.2,fx:'water',d:'對單一敵人降下豪雨'},
- l_revive:{n:'雨後甦生',mp:13,t:'party',heal:.6,revive:true,d:'回復全隊 60% HP，並讓倒下的同伴站起來'},
- l_typhoon:{n:'颱風眼',mp:14,t:'all',m:1.8,fx:'wind',d:'以強風重創所有敵人'},
- l_forecast:{n:'精準預報',mp:8,t:'party',buff:'crit',d:'全隊下一次攻擊必定暴擊'},
- m_channel:{n:'導流斬',mp:5,t:'one',m:1.6,fx:'slash',d:'對單一敵人造成傷害'},
+ h_press:{n:'水壓衝擊',mp:4,t:'one',m:1.9,fx:'water',d:'對單一敵人造成大量傷害'},
+ h_shield:{n:'堤防之盾',mp:5,t:'party',buff:'guard',d:'全隊 3 回合內受到的傷害減半'},
+ h_sweep:{n:'洩洪橫掃',mp:5,t:'all',m:1.1,fx:'wave',d:'攻擊所有敵人'},
+ h_focus:{n:'穩固基礎',mp:4,t:'self',heal:.4,buff:'atk',d:'回復自身 40% HP，並提升攻擊力'},
+ h_uh:{n:'單位歷線斬',mp:8,t:'one',m:2.8,fx:'beam',d:'對單一敵人造成極大傷害'},
+ h_rally:{n:'全員鼓舞',mp:6,t:'party',buff:'atk',d:'全隊攻擊力提升 3 回合'},
+ l_rain:{n:'甘霖',mp:5,t:'party',heal:.3,d:'回復全隊 30% HP'},
+ l_thunder:{n:'雷雨召喚',mp:6,t:'all',m:1.3,fx:'thunder',d:'以落雷攻擊所有敵人'},
+ l_mist:{n:'雲霧屏障',mp:5,t:'party',buff:'guard',d:'全隊 3 回合內受到的傷害減半'},
+ l_deluge:{n:'豪雨',mp:6,t:'one',m:2.2,fx:'water',d:'對單一敵人降下豪雨'},
+ l_revive:{n:'雨後甦生',mp:8,t:'party',heal:.6,revive:true,d:'回復全隊 60% HP，並讓倒下的同伴站起來'},
+ l_typhoon:{n:'颱風眼',mp:9,t:'all',m:1.8,fx:'wind',d:'以強風重創所有敵人'},
+ l_forecast:{n:'精準預報',mp:5,t:'party',buff:'crit',d:'全隊下一次攻擊必定暴擊'},
+ m_channel:{n:'導流斬',mp:3,t:'one',m:1.6,fx:'slash',d:'對單一敵人造成傷害'},
  m_flame:{n:'黑焰一擊',mp:0,t:'one',m:3.4,cost:.2,fx:'flame',d:'燃燒殘留的煤煙之力，消耗自身 20% HP 造成巨大傷害'},
- m_dam:{n:'攔砂壩',mp:8,t:'one',m:1.0,stun:true,fx:'rock',d:'造成傷害，並讓敵人暫停行動一回合'},
- m_quake:{n:'土石震擊',mp:11,t:'all',m:1.5,fx:'rock',d:'震擊所有敵人'},
- m_restore:{n:'生態工法',mp:9,t:'party',heal:.35,buff:'guard',d:'回復全隊 35% HP，並減少受到的傷害'},
+ m_dam:{n:'攔砂壩',mp:5,t:'one',m:1.0,stun:true,fx:'rock',d:'造成傷害，並讓敵人暫停行動一回合'},
+ m_quake:{n:'土石震擊',mp:7,t:'all',m:1.5,fx:'rock',d:'震擊所有敵人'},
+ m_restore:{n:'生態工法',mp:6,t:'party',heal:.35,buff:'guard',d:'回復全隊 35% HP，並減少受到的傷害'},
 };
 const PICKS={hero:{2:['h_press','h_shield'],3:['h_sweep','h_focus'],4:['h_uh','h_rally']},lin:{2:['l_thunder','l_mist'],3:['l_deluge','l_revive'],4:['l_typhoon','l_forecast']},mo:{join:['m_flame','m_dam'],6:['m_quake','m_restore']}};
 function baseStats(id,lv){if(id==='hero')return{hp:60+16*lv,mp:10+3*lv,atk:12+4*lv,def:3+2*lv};if(id==='lin')return{hp:46+12*lv,mp:14+4*lv,atk:9+3*lv,def:2+2*lv};return{hp:72+16*lv,mp:8+3*lv,atk:15+5*lv,def:4+2*lv};}
@@ -969,7 +969,7 @@ function chooseCmd(p){
    const sk=p.id==='hero'?G.sk.hero:G.sk[p.id];
    el.innerHTML=`<button data-c="atk">攻擊</button><button data-c="sk" ${sk.length?'':'disabled'}>招式</button><button data-c="def">防禦</button><button data-c="item" ${G.items.onigiri>0?'':'disabled'}>🍙 飯糰<small>剩 ${G.items.onigiri||0} 個</small></button>${BT.barrier?'<button data-c="ana" class="hl">解讀結界</button>':''}`;
    el.querySelectorAll('button').forEach(b=>b.onclick=async()=>{if(el.dataset.lock==='1')return;el.dataset.lock='1';el.querySelectorAll('button').forEach(x=>x.disabled=true);SND.sfx('sel');const c=b.dataset.c;
-    if(c==='atk'){pickTarget(async ti=>{let crit=p.crit;if(p.id==='hero'&&!crit&&Math.random()<.15){crit=await miniQuiz();}finish({t:'atk',crit,ti});});}
+    if(c==='atk'){pickTarget(async ti=>{let crit=p.crit;if(p.id==='hero'&&!crit&&Math.random()<.2){crit=await miniQuiz();}finish({t:'atk',crit,ti});});}
     else if(c==='def')finish({t:'def'});
     else if(c==='sk')skills();
     else if(c==='item')items();
@@ -999,7 +999,7 @@ async function breakBarrier(){
  const d=Math.round(f.max*.3);f.hp=Math.max(1,f.hp-d);pop(f,d,'#ffd34d');SND.sfx('crit');await blog(`結界的反衝對${f.n}造成 ${d} 點傷害！現在攻擊有效了！`,1500);
 }
 const isB=f=>!!(BT&&BT.boss&&f.i===0);
-const MISS=.15; // 我方攻擊落空機率（暴擊時必中）
+const MISS=.10; // 我方攻擊落空機率（暴擊時必中）
 const fx=f=>{const n=BT.foes.length;if(BT.boss)return f.i===0?128:(f.i===1?262:248);return n===1?140:90+f.i*110;};
 const fy=f=>{if(BT.boss)return f.i===0?150:(f.i===1?104:216);return BT.foes.length===1?160:140+f.i*40;};
 const pX=i=>336+i*34, pY=i=>112+i*58;
@@ -1283,7 +1283,7 @@ async function introScene(){
 }
 /* ===== 獨立版：流程、存檔、成績（不需要 Claude） ===== */
 /* ---------- 設定（老師可修改） ---------- */
-const SHEET_URL='https://script.google.com/macros/s/AKfycbz7VpcSD6k4Qa8HjgvtimzDv7ji5YiHv2GonEa7ZNvU3IY5l_JpXInvnk7_kX4oAQq0rQ/exec';           // Google Apps Script 部署後的網址
+const SHEET_URL='https://script.google.com/macros/s/AKfycbyZRlTVn9LplGYD6V-jwuVnS52DOGGwUrezCnoR5EhvIXi8YV51VLf42vIx5ZpvaIwtMQ/exec';           // Google Apps Script 部署後的網址
 const TEACHER_KEY='Brooke';  // 網址加上 ?teacher=這個字串，就會顯示答案提示與目標文字
 const ALLOW_RESET=false;      // 測試期間允許在結算畫面清除紀錄重玩；正式考試請改成 false
 /* ------------------------------------- */
