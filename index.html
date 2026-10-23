@@ -217,7 +217,7 @@ function genQuestions(seed){
   { const C=step(0.4,0.85,0.05),i=ri(8,24)*5,A=ri(5,40)/10,tot=ri(120,240),dur=ri(2,5);
     Q.q5={id:'q5',type:'num',title:'古城排水道',prompt:'請以合理化公式計算古城排水道的設計尖峰流量。計算所需的資料，要向遺跡裡的人打聽。',
       unit:'m³/s',answer:C*i*A/3.6,tol:0.02,params:{C,i,A,tot,dur}}; }
-  { const yes=shuffle(['有效降雨在其延時內強度均勻','有效降雨在整個集水區內空間分布均勻','直接逕流歷線的縱距與有效降雨深度成正比','同延時的有效降雨不論何時發生，產生的歷線形狀相同','同延時有效降雨所產生之直接逕流歷線，基期都相同']).slice(0,3);
+  { const yes=shuffle(['有效降雨在其延時內強度均勻','有效降雨在整個集水區內空間分布均勻','直接逕流歷線的對應流量與有效降雨深度成正比','同延時的有效降雨不論何時發生，產生的歷線形狀相同','同延時有效降雨所產生之直接逕流歷線，基期都相同']).slice(0,3);
     const no=shuffle(['歷線基期會隨有效降雨強度增加而變長','單位歷線中包含基流量','有效降雨深度等於總降雨深度','單位歷線只適用於面積超過一萬平方公里的集水區']).slice(0,3);
     const o=shuffle([...yes,...no]);
     Q.q6={id:'q6',type:'multi',title:'古代石碑',prompt:'六塊石碑上刻著單位歷線理論的敘述。請選出「所有」屬於單位歷線基本假設的石碑。',options:o,correct:yes.map(x=>o.indexOf(x)).sort((a,b)=>a-b)}; }
@@ -1283,7 +1283,7 @@ async function introScene(){
 }
 /* ===== 獨立版：流程、存檔、成績（不需要 Claude） ===== */
 /* ---------- 設定（老師可修改） ---------- */
-const SHEET_URL='https://script.google.com/macros/s/AKfycbyZRlTVn9LplGYD6V-jwuVnS52DOGGwUrezCnoR5EhvIXi8YV51VLf42vIx5ZpvaIwtMQ/exec';           // Google Apps Script 部署後的網址
+const SHEET_URL='https://script.google.com/macros/s/AKfycbxrIE8-DGXmL3tC1KRGQkq_4bL7FrGaACdFqQGeMxJi_gwR8CHJIsoecDNQbb46RIsjBw/exec';           // Google Apps Script 部署後的網址
 const TEACHER_KEY='Brooke';  // 網址加上 ?teacher=這個字串，就會顯示答案提示與目標文字
 const ALLOW_RESET=false;      // 測試期間允許在結算畫面清除紀錄重玩；正式考試請改成 false
 /* ------------------------------------- */
@@ -1357,7 +1357,7 @@ function renderRegister(){
    <li>野外會遇到怪物，打怪可以升級、學新招式；戰鬥中偶爾會出現不計分的小問答，答對會打出暴擊。</li>
    <li>每一個線索務必要注意，包括中途跟任何NPC的對話都有可能是線索。</li>
    <li>戰鬥後 HP 不會自動回復。解開特定謎題可以獲得🍙飯糰，用來回復 HP。</li>
-   <li>Boss戰都需要上傳手寫的計算程序，才可以算完成，千萬記得。</li>
+   <li>Boss戰皆需要上傳手寫的計算程序，才可以算完成，千萬記得。</li>
    <li>遊戲有音樂和音效，可以按右上角的喇叭關閉。</li>
    ${SHEET_URL?'':'<li class="err">目前為測試版：成績不會傳送給老師。</li>'}</ul></div>
   <div class="panel stack">
